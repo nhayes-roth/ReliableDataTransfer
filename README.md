@@ -70,7 +70,7 @@ establishment, but with a FIN request to signal the end of the transmission.
 -You do not have to implement push (PSH flag), urgent data (URG), reset (RST) or
 TCP options.
 
-- You should set the port numbers in the packet to the right values, but can otherwise ignore them.
+-You should set the port numbers in the packet to the right values, but can otherwise ignore them.
 
 -The TCP checksum is computed over the TCP header and data; this does not quite correspond to the correct way of doing it (which includes parts of the IP header), but is close enough.
 
