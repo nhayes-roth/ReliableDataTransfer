@@ -25,7 +25,7 @@ This program implements a one-way version of a reliable data transfer protocol, 
 
 2. Run Make to compile all the source code.
 
-    `~/.../nbh2113$ make
+    `~/.../nbh2113$ make`
 
 3. In one terminal, start the sender.
 
@@ -49,6 +49,11 @@ This program implements a one-way version of a reliable data transfer protocol, 
 ### Files
 
 - ./README.md
+- ./Makefile
+- ./Sender.java
+- ./Receiver.java
+- ./
+- ./
 
 ### Extensions
 
