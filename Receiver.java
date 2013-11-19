@@ -136,7 +136,7 @@ public class Receiver {
                // write log entry for received packet
                log(remote_ip, source_port, 
                    InetAddress.getLocalHost().getHostAddress(), dest_port, 
-                   seq_num, ack_num, fin_flag);
+                   seq_num, ack_num, fin_flag, log_writer);
                }
 
            return null;
@@ -172,13 +172,15 @@ public class Receiver {
          */
         private static void log(String source_ip, int source_port, 
                                 String dest_ip, int dest_port,
-                                int seq_num, int ack_num, boolean fin){
+                                int seq_num, int ack_num, boolean fin, log_writer){
             String entry = "Time(ms): " + System.currentTimeMillis() + " ";
             entry += "Source: " + source_ip + ":" + source_port + " ";
             entry += "Destination: " + dest_ip + ": " + dest_port + " ";
             entry += "Sequence #: " + seq_num + " ";
             entry += "ACK #: " + ack_num + " ";
             entry += "FIN: " + fin + " ";
+            log_writer.write(entry);
+            log_writer.flush();
         }
        /*
         * Reconstruct the original file and save it to the provided filename.
