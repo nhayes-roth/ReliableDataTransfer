@@ -32,7 +32,8 @@ public class Receiver {
     /* main */
     public static void main(String[] args) {
         check(args);
-        byte[] bytes_received = receive(args[1], args[2], args[3], args[4]);
+        BufferedWriter log_writer = startLog(args[4]);
+        byte[] bytes_received = receive(args[1], args[2], args[3], log_writer);
         writeToFile(bytes_received, args[0]);
 
     }
@@ -61,17 +62,53 @@ public class Receiver {
       */
 
       private static void chastise(){
-          System.out.println("\nImproper command format, please try again.");
-          System.out.println("java Receiver [filename] [listening_port] " +
+          System.err.println("\nImproper command format, please try again.");
+          System.err.println("java Receiver [filename] [listening_port] " +
                              "[remote_ip] [remote_port] [log_filename]\n");
           System.exit(1);
       }
 
       /*
+       * Open a BufferedWriter to the provided log_filename.
+       */
+       private static BufferedWriter startLog(String log_filename){
+           // write to standard out
+           if (log_filename.equals("stdout")){
+               return new BufferedWriter(new OutputStreamWriter(System.out));
+           } 
+           // write to a specific file
+           else {
+               try {
+                   File file = new File(log_filename);
+                   if (!file.exists()){
+                       file.createNewFile();
+                   }
+                   return new BufferedWriter(new FileWriter(file.getAbsoluteFile(), true));
+               } catch (Exception e) {
+                   e.printStackTrace();
+                   System.err.println("\nError encountered creating logfile\n");
+                   System.exit(1);
+               }
+           }
+           return null;
+       }
+
+      /*
        * Receive data sent via UDP and construct the logfile.
        */
        private static byte[] receive(String listening_port, String remote_ip, 
-                                     String remote_port, String log_filename){
+                                     String remote_port, BufferedWriter log_writer){
+           try{
+               int l_port = Integer.parseInt(listening_port);
+               int r_port = Integer.parseInt(remote_port);
+               InetAddress ip = InetAddress.getByName(remote_ip);
+           } catch (Exception e) {
+               e.printStackTrace();
+               System.err.println("\nError parsing ports or remote ip address.\n");
+               System.exit(1);
+           }
+           
+
            return null;
        }
 
