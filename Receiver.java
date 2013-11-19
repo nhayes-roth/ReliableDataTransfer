@@ -69,7 +69,7 @@ public class Receiver {
         /*
          * Open a BufferedWriter to the provided log_filename.
          */
-        private static BufferedWriter startLog(String log_filename) {
+        public static BufferedWriter startLog(String log_filename) {
                 // write to standard out
                 if (log_filename.equals("stdout")) {
                         return new BufferedWriter(new OutputStreamWriter(System.out));
@@ -190,7 +190,7 @@ public class Receiver {
         /*
          * Validates that the received packet is the expected one.
          */
-        private static boolean validate(int actual, int expected, byte[] checksum, byte[] data) {
+        public static boolean validate(int actual, int expected, byte[] checksum, byte[] data) {
                 // compare actual and expected seq_num
                 if ((expected >= 0) && (actual == expected)) {
                         return false;
@@ -213,7 +213,7 @@ public class Receiver {
         /*
          * Converts a byte array to an integer.
          */
-        private static int toInteger(byte[] bytes) {
+        public static int toInteger(byte[] bytes) {
                 // pad byte[2] to byte[4]
                 if (bytes.length != 4) {
                         bytes = concat(new byte[2], bytes);
@@ -224,7 +224,7 @@ public class Receiver {
         /*
          * Concatenate two byte arrays.
          */
-        private static byte[] concat(byte[] first, byte[] second) {
+        public static byte[] concat(byte[] first, byte[] second) {
                 byte[] to_return = new byte[first.length + second.length];
                 for (int i = 0; i < first.length; i++) {
                         to_return[i] = first[i];
@@ -277,7 +277,7 @@ public class Receiver {
          * Converts an integer to 16 bits (2 bytes), useful for Source and Dest
          * port #'s.
          */
-        private static byte[] intToTwo(int number) {
+        public static byte[] intToTwo(int number) {
                 byte[] bytes = new byte[2];
                 bytes[0] = (byte) (number >>> 8);
                 bytes[1] = (byte) number;
@@ -288,7 +288,7 @@ public class Receiver {
          * Converts an integer to 32 bits (4 bytes), useful for sequence and
          * acknowledgement numbers.
          */
-        private static byte[] intToFour(int number) {
+        public static byte[] intToFour(int number) {
                 byte[] bytes = new byte[4];
                 bytes[0] = (byte) (number >>> 24);
                 bytes[1] = (byte) (number >>> 16);
