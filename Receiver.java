@@ -8,8 +8,8 @@
  * ------------
  * The receiver uses the receiving services of the TCP-like protocol to construct
  * the file sent by the sender. The receiver is invoked as follows:
- *      % Receiver file.txt 20000 128.59.15.37 20001 logfile.txt
- *                filename list_port remote_ip remote_port  log_filename
+ *      $ java Receiver file.txt 20000 128.59.15.37 20001 logfile.txt
+ *                     filename list_port remote_ip remote_port  log_filename
  * The receiver receives data on the listening_port, writes it to the specified file (filename)
  * and sends ACKS to the remote host at the remote_ip and remote_port. The receiver logs the
  * headers of all received and sent packets to log_filename and orders them by timestamp. 
