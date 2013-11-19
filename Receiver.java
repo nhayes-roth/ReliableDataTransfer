@@ -261,7 +261,16 @@ public class Receiver {
          * Reconstruct the original file and save it to the provided filename.
          */
         private static void writeToFile(byte[] bytes_received, String filename) {
-                return;
+                try{
+                        FileOutputStream stream = new FileOutputStream(filename);
+                        stream.write(bytes_received);
+                        stream.close();
+                        System.out.println("\n " + filename + " successfully received.");
+                } catch (Exception e) {
+                        e.printStackTrace();
+                        System.err.println("\nError encountered creating output file.\n");
+                }
+                       return;
         }
 
         /*
