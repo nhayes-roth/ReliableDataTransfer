@@ -133,7 +133,11 @@ public class Receiver {
                byte[] rec_window = Arrays.copyOfRange(buffer, 14, 16);
                byte[] checksum   = Arrays.copyOfRange(buffer, 16, 18);
                byte[] urgent     = Arrays.copyOfRange(buffer, 18, 20);
-           }
+               // write log entry for received packet
+               log(remote_ip, source_port, 
+                   InetAddress.getLocalHost().getHostAddress(), dest_port, 
+                   seq_num, ack_num, fin_flag);
+               }
 
            return null;
        }
@@ -149,6 +153,9 @@ public class Receiver {
             return ByteBuffer.wrap(bytes).getInt();
         }
 
+        /* 
+         * Concatenate two byte arrays.
+         */
         private static byte[] concat(byte[] first, byte[] second){
             byte[] to_return = new byte[first.length + second.length];
             for (int i = 0; i < first.length; i ++){
@@ -160,6 +167,19 @@ public class Receiver {
             return to_return;
         }
 
+        /*
+         * Writes a log entry to the designated logfile.
+         */
+        private static void log(String source_ip, int source_port, 
+                                String dest_ip, int dest_port,
+                                int seq_num, int ack_num, boolean fin){
+            String entry = "Time(ms): " + System.currentTimeMillis() + " ";
+            entry += "Source: " + source_ip + ":" + source_port + " ";
+            entry += "Destination: " + dest_ip + ": " + dest_port + " ";
+            entry += "Sequence #: " + seq_num + " ";
+            entry += "ACK #: " + ack_num + " ";
+            entry += "FIN: " + fin + " ";
+        }
        /*
         * Reconstruct the original file and save it to the provided filename.
         */
