@@ -23,6 +23,7 @@ import java.io.*;
 import java.net.*;
 import java.nio.*;
 import java.util.*;
+import java.security.MessageDigest;
 
 public class Receiver {
     
@@ -110,8 +111,8 @@ public class Receiver {
            }
            byte[] bytes_received = null;
            DatagramSocket socket = new DatagramSocket(l_port);
-           int expected_seq_num = 0;
-           int count = 0;
+           int expected_seq_num = -1;   // accept the first packet no matter what; then change
+           int response_seq_num = new Random(System.currentTimeMillis()).nextInt(); // random start
            boolean fin_flag = false;
            // loop until the fin_flag is received
            while(!fin_flag){
@@ -137,10 +138,61 @@ public class Receiver {
                log(remote_ip, source_port, 
                    InetAddress.getLocalHost().getHostAddress(), dest_port, 
                    seq_num, ack_num, fin_flag, log_writer);
+               // validate the correctness of the received packet
+               if (validate(seq_num, expected_seq_num, checksum, data)){
+                   // add data to received
+                   if (bytes_received == null){
+                       bytes_received = data;
+                   } else {
+                       bytes_received = concat(bytes_received, data);
+                   }
+                   // change expected seq number and send ack
+                   expected_seq_num += data.length;
+                   byte[] ack = concat(intToTwo(dest_port), 
+                                concat(intToTwo(source_port), 
+                                concat(intToFour(response_seq_num),
+                                concat(intToFour(expected_seq_num), 
+                                concat(Arrays.copyOfRange(buffer, 12, 13),
+                                concat(flags,
+                                concat(rec_window,
+                                concat(checksum, urgent))))))));
+                   DatagramPacket ackPacket = new DatagramPacket(ack, ack.length, ip, source_port);
+                   socket.send(ackPacket);
+                   // write log entry
+                   log(InetAddress.getLocalHost().getHostAddress(), dest_port, 
+                       ip.getHostAddress(), source_port,
+                       response_seq_num, expected_seq_num, fin_flag, log_writer);
+                   // ack is only a header, so increment the seq num
+                   response_seq_num ++;
                }
-
-           return null;
+           }
+           // all packets received
+           return bytes_received;
        }
+
+       /*
+        * Validates that the received packet is the expected one.
+        */
+       private static boolean validate(int actual, int expected, byte[] checksum, byte[] data){
+           // compare actual and expected seq_num
+           if ((expected >= 0) && (actual == expected)){
+               return false;
+           }
+           // perform checksum
+           try {
+               MessageDigest digest = MessageDigest.getInstance("MD5");
+               digest.update(data);
+               byte[] to_compare = digest.digest();
+               if (checksum[0] == to_compare[0] && checksum[1] == to_compare[1]){
+                   return true;
+               } else return false;
+           } catch (Exception e) {
+                   e.printStackTrace();
+                   System.err.println("\nChecksum error encountered\n");
+           }
+           return false;
+       }
+
 
        /*
         * Converts a byte array to an integer.
@@ -172,15 +224,20 @@ public class Receiver {
          */
         private static void log(String source_ip, int source_port, 
                                 String dest_ip, int dest_port,
-                                int seq_num, int ack_num, boolean fin, log_writer){
+                                int seq_num, int ack_num, boolean fin, BufferedWriter log_writer){
             String entry = "Time(ms): " + System.currentTimeMillis() + " ";
             entry += "Source: " + source_ip + ":" + source_port + " ";
             entry += "Destination: " + dest_ip + ": " + dest_port + " ";
             entry += "Sequence #: " + seq_num + " ";
             entry += "ACK #: " + ack_num + " ";
             entry += "FIN: " + fin + " ";
-            log_writer.write(entry);
-            log_writer.flush();
+            try{
+                log_writer.write(entry);
+                log_writer.flush();
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.err.println("\nError encountered writing to logfile.\n");
+            }
         }
        /*
         * Reconstruct the original file and save it to the provided filename.
@@ -188,17 +245,6 @@ public class Receiver {
         private static void writeToFile(byte[] bytes_received, String filename){
             return;
         }
-
-     /*
-      * Generate a packet's header given a source_port, dest_port, and next_exp_seq number).
-      * Note: because this is a one way data transfer, only the acknowledgment number matters;
-      * the sequence number from the receiver is irellevant.
-      */
-      private static byte[] makeHeader(int source, int dest, int exp_seq){
-         byte[] header = new byte[20];
-         byte[] sourcePort = new byte[4];
-         return header;
-     }
 
     /*
      * Converts an integer to 16 bits (2 bytes), 
