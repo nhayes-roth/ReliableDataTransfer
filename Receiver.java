@@ -31,20 +31,26 @@ public class Receiver {
     
     /* main */
     public static void main(String[] args) {
-        check(args); 
+        check(args);
+        byte[] bytes_received = receive(args[1], args[2], args[3], args[4]);
+        writeToFile(bytes_received, args[0]);
+
     }
 
     /* 
      * Check the command line arguments for proper form.
      */
      private static void check(String[] args){
+         // check length
          if(args.length != 5)
              chastise();
+         // check types
          else try{
              int port = Integer.parseInt(args[1]);
              port = Integer.parseInt(args[3]);
              InetAddress ip = InetAddress.getByName(args[2]);
          } catch (Exception e) {
+             // let them know what they've done
              e.printStackTrace();
              chastise();
          }
@@ -60,6 +66,22 @@ public class Receiver {
                              "[remote_ip] [remote_port] [log_filename]\n");
           System.exit(1);
       }
+
+      /*
+       * Receive data sent via UDP and construct the logfile.
+       */
+       private static byte[] receive(String listening_port, String remote_ip, 
+                                     String remote_port, String log_filename){
+           return null;
+       }
+
+       /*
+        * Reconstruct the original file and save it to the provided filename.
+        */
+        private static void writeToFile(byte[] bytes_received, String filename){
+            return;
+        }
+
 
      /*
       * Generate a packet's header given a source_port, dest_port, and next_exp_seq number).
