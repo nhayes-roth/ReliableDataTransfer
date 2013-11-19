@@ -21,21 +21,17 @@
 
 import java.io.*;
 import java.net.*;
+import java.nio.*;
+import java.util.*;
 
 public class Receiver {
     
-
-
-    /* Class Variables */
-    
-    
     /* main */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         check(args);
         BufferedWriter log_writer = startLog(args[4]);
         byte[] bytes_received = receive(args[1], args[2], args[3], log_writer);
         writeToFile(bytes_received, args[0]);
-
     }
 
     /* 
@@ -60,7 +56,6 @@ public class Receiver {
      /* 
       * Instruct the user how to properly execute the program.
       */
-
       private static void chastise(){
           System.err.println("\nImproper command format, please try again.");
           System.err.println("java Receiver [filename] [listening_port] " +
@@ -97,20 +92,73 @@ public class Receiver {
        * Receive data sent via UDP and construct the logfile.
        */
        private static byte[] receive(String listening_port, String remote_ip, 
-                                     String remote_port, BufferedWriter log_writer){
+                                     String remote_port, BufferedWriter log_writer) throws Exception{
+           int l_port = 0;
+           int r_port = 0;
+           InetAddress ip = null;
+           // parse ports and ip
            try{
-               int l_port = Integer.parseInt(listening_port);
-               int r_port = Integer.parseInt(remote_port);
-               InetAddress ip = InetAddress.getByName(remote_ip);
-           } catch (Exception e) {
+               l_port = Integer.parseInt(listening_port);
+               r_port = Integer.parseInt(remote_port);
+               ip     = InetAddress.getByName(remote_ip);
+           } 
+           // shouldn't rech this and still throw an exception
+           catch (Exception e) {
                e.printStackTrace();
                System.err.println("\nError parsing ports or remote ip address.\n");
                System.exit(1);
            }
-           
+           byte[] bytes_received = null;
+           DatagramSocket socket = new DatagramSocket(l_port);
+           int expected_seq_num = 0;
+           int count = 0;
+           boolean fin_flag = false;
+           // loop until the fin_flag is received
+           while(!fin_flag){
+               // receive a packet of data up to size 256 Bytes
+               byte[] buffer = new byte[256];
+               DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+               socket.receive(packet);
+               // separate header from data
+               byte[] Header = Arrays.copyOfRange(buffer, 0, 20);
+               byte[] data   = Arrays.copyOfRange(buffer, 20, buffer.length);
+               // extract the header fields
+               int source_port   = toInteger(Arrays.copyOfRange(buffer, 0, 2));
+               int dest_port     = toInteger(Arrays.copyOfRange(buffer, 2, 4));
+               int seq_num       = toInteger(Arrays.copyOfRange(buffer, 4, 8));
+               int ack_num       = toInteger(Arrays.copyOfRange(buffer, 8, 12));
+               int header_len    = toInteger(Arrays.copyOfRange(buffer, 12, 13));
+               byte[] flags      = Arrays.copyOfRange(buffer, 13, 14);
+               fin_flag  = (Boolean)(flags[0] == (byte)1);      // only flag we care about
+               byte[] rec_window = Arrays.copyOfRange(buffer, 14, 16);
+               byte[] checksum   = Arrays.copyOfRange(buffer, 16, 18);
+               byte[] urgent     = Arrays.copyOfRange(buffer, 18, 20);
+           }
 
            return null;
        }
+
+       /*
+        * Converts a byte array to an integer.
+        */
+       private static int toInteger(byte[] bytes){
+            // pad byte[2] to byte[4]
+            if (bytes.length != 4) {
+                bytes = concat(new byte[2], bytes);
+            }
+            return ByteBuffer.wrap(bytes).getInt();
+        }
+
+        private static byte[] concat(byte[] first, byte[] second){
+            byte[] to_return = new byte[first.length + second.length];
+            for (int i = 0; i < first.length; i ++){
+                to_return[i] = first[i];
+            }
+            for (int j = 0; j < second.length; j++){
+                to_return[first.length + j] = second[j];
+            }
+            return to_return;
+        }
 
        /*
         * Reconstruct the original file and save it to the provided filename.
@@ -118,7 +166,6 @@ public class Receiver {
         private static void writeToFile(byte[] bytes_received, String filename){
             return;
         }
-
 
      /*
       * Generate a packet's header given a source_port, dest_port, and next_exp_seq number).
@@ -141,7 +188,6 @@ public class Receiver {
          bytes[1] = (byte)number;
          return bytes;
      }
-
 
     /*
      * Converts an integer to 32 bits (4 bytes), 
