@@ -44,9 +44,6 @@ public class Sender implements Runnable{
                 String log_filename = args[5];
                 // start log
                 BufferedWriter log_writer = startLog(log_filename);
-                byte[] bytes_received = receive(args[1], args[2], args[3],
-                                log_writer);
-                writeToFile(bytes_received, args[0]);
         }
 
         /*
@@ -58,6 +55,11 @@ public class Sender implements Runnable{
                         System.err.println("\nImproper command format, please try again.");
                         System.err.println("java Sender [filename] [remote_IP] [remote_port] "
                                          + "[ack_port_number] [window_size] [log_filename]\n");
+                        System.exit(1);
+                }
+                // window size
+                if (Integer.parseInt(args[4])<=0){
+                        System.err.println("\nImproper window size. Please choose an integer value greater than 0.");
                         System.exit(1);
                 }
         }
@@ -85,5 +87,11 @@ public class Sender implements Runnable{
                         }
                 }
                 return null;
+        }
+        
+        /*
+         * Override abstract method run()
+         */
+        public void run(){
         }
 }
