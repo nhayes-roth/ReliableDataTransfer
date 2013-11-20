@@ -35,6 +35,7 @@ public class Sender implements Runnable{
         public static void main(String[] args) throws Exception {
                 check(args);
                 loadFile(filename);
+                System.out.println("####### Bytes read in -- " + file_bytes.length);
                 packets_needed = file_bytes.length/(256 - 20) + 1;
                 socket = new DatagramSocket(ack_port);
                 log_writer = Receiver.startLog(log_filename);
@@ -132,15 +133,13 @@ public class Sender implements Runnable{
         private static void logAckPacket(DatagramPacket ack_packet) throws UnknownHostException {
                 byte[] buffer = ack_packet.getData();
                 // extract the header fields
-                int source_port = Receiver.toInteger(Arrays.copyOfRange(buffer, 0, 2));
-                int dest_port = Receiver.toInteger(Arrays.copyOfRange(buffer, 2, 4));
                 int seq_num = Receiver.toInteger(Arrays.copyOfRange(buffer, 4, 8));
                 int ack_num = Receiver.toInteger(Arrays.copyOfRange(buffer, 8, 12));        
                 byte[] flags = Arrays.copyOfRange(buffer, 13, 14);
                 boolean fin_flag = (Boolean) (flags[0] == (byte) 1); 
                 String entry = "Time(ms): " + System.currentTimeMillis() + " ";
-                entry += "Source: " + remote_ip.getHostAddress() + ":" + source_port + " ";
-                entry += "Destination: " + InetAddress.getLocalHost().getHostAddress() + ": " + dest_port + " ";
+                entry += "Source: " + remote_ip.getHostAddress() + ":" + remote_port + " ";
+                entry += "Destination: " + InetAddress.getLocalHost().getHostAddress() + ": " + ack_port + " ";
                 entry += "Sequence #: " + seq_num + " ";
                 entry += "ACK #: " + ack_num + " ";
                 entry += "FIN: " + fin_flag + " ";
@@ -168,15 +167,13 @@ public class Sender implements Runnable{
         private static void logSentPacket(DatagramPacket packet) throws UnknownHostException{
                 byte[] buffer = packet.getData();
                 // extract the header fields
-                int source_port = Receiver.toInteger(Arrays.copyOfRange(buffer, 0, 2));
-                int dest_port = Receiver.toInteger(Arrays.copyOfRange(buffer, 2, 4));
                 int seq_num = Receiver.toInteger(Arrays.copyOfRange(buffer, 4, 8));
                 int ack_num = Receiver.toInteger(Arrays.copyOfRange(buffer, 8, 12));
                 byte[] flags = Arrays.copyOfRange(buffer, 13, 14);
                 boolean fin_flag = (Boolean) (flags[0] == (byte) 1); 
                 String entry = "Time(ms): " + System.currentTimeMillis() + " ";
-                entry += "Source: " + InetAddress.getLocalHost().getHostAddress() + ":" + source_port + " ";
-                entry += "Destination: " + remote_ip.getHostAddress() + ": " + dest_port + " ";
+                entry += "Source: " + InetAddress.getLocalHost().getHostAddress() + ":" + ack_port + " ";
+                entry += "Destination: " + remote_ip.getHostAddress() + ":" + remote_port + " ";
                 entry += "Sequence #: " + seq_num + " ";
                 entry += "ACK #: " + ack_num + " ";
                 entry += "FIN: " + fin_flag + "\n";

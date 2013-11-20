@@ -25,21 +25,28 @@ import java.util.*;
 import java.security.MessageDigest;
 
 public class Receiver {
+        
+        /* Class variables */
+        private static String filename;
+        private static int listening_port;
+        private static InetAddress remote_ip;
+        private static int remote_port;
+        private static String log_filename;
 
         /* main */
         public static void main(String[] args) throws Exception {
                 check(args);
                 BufferedWriter log_writer = startLog(args[4]);
-                byte[] bytes_received = receive(args[1], args[2], args[3],
-                                log_writer);
+                byte[] bytes_received = receive(log_writer);
 
+                System.out.println("####### Writing -- " + bytes_received.length + "bytes to file... #######");
                 writeToFile(bytes_received, args[0]);
         }
 
         /*
          * Check the command line arguments for proper form.
          */
-        private static void check(String[] args) {
+        private static void check(String[] args) throws UnknownHostException {
                 // check length
                 if (args.length != 5)
                         chastise();
@@ -55,6 +62,12 @@ public class Receiver {
                                 chastise();
                         }
                 }
+                // set class variables;
+                filename = args[0];
+                listening_port = Integer.parseInt(args[1]);
+                remote_ip = InetAddress.getByName(args[2]);
+                remote_port = Integer.parseInt(args[3]);
+                log_filename = args[4];
         }
 
         /*
@@ -95,26 +108,10 @@ public class Receiver {
         /*
          * Receive data sent via UDP and construct the logfile.
          */
-        private static byte[] receive(String listening_port, String remote_ip,
-                        String remote_port, BufferedWriter log_writer)
+        private static byte[] receive(BufferedWriter log_writer)
                         throws Exception {
-                int l_port = 0;
-                int r_port = 0;
-                InetAddress ip = null;
-                // parse ports and ip
-                try {
-                        l_port = Integer.parseInt(listening_port);
-                        r_port = Integer.parseInt(remote_port);
-                        ip = InetAddress.getByName(remote_ip);
-                }
-                // shouldn't rech this and still throw an exception
-                catch (Exception e) {
-                        e.printStackTrace();
-                        System.err.println("\nError parsing ports or remote ip address.\n");
-                        System.exit(1);
-                }
                 byte[] bytes_received = null;
-                DatagramSocket socket = new DatagramSocket(l_port);
+                DatagramSocket socket = new DatagramSocket(listening_port);
                 int expected_seq_num = 0;
                 boolean fin_flag = false;
                 // loop until the fin_flag is received
@@ -137,8 +134,8 @@ public class Receiver {
                         byte[] checksum = Arrays.copyOfRange(Header, 16, 18);
                         byte[] urgent = Arrays.copyOfRange(Header, 18, 20);
                         // write log entry for received packet
-                        log(remote_ip, source_port, 
-                            InetAddress.getLocalHost().getHostAddress(), dest_port, 
+                        log(remote_ip.getHostAddress(), remote_port, 
+                            InetAddress.getLocalHost().getHostAddress(), listening_port, 
                             seq_num, ack_num, fin_flag, log_writer);
                         // validate the correctness of the received packet
                         if (validate(seq_num, expected_seq_num, checksum, data)) {
@@ -160,11 +157,11 @@ public class Receiver {
                                              concat(rec_window,
                                              concat(checksum,
                                              urgent))))))));
-                                DatagramPacket ackPacket = new DatagramPacket(ack, ack.length, ip, source_port);
+                                DatagramPacket ackPacket = new DatagramPacket(ack, ack.length, remote_ip, remote_port);
                                 socket.send(ackPacket);
                                 // write log entry
-                                log(InetAddress.getLocalHost().getHostAddress(), dest_port, 
-                                    ip.getHostAddress(), source_port, 
+                                log(InetAddress.getLocalHost().getHostAddress(), listening_port, 
+                                    remote_ip.getHostAddress(), remote_port, 
                                     seq_num, expected_seq_num, fin_flag, log_writer);
                                 // ack is only a header, so increment the seq num
                         }
@@ -179,6 +176,7 @@ public class Receiver {
         public static boolean validate(int actual, int expected, byte[] checksum, byte[] data) {
                 // compare actual and expected seq_num
                 if (actual == expected) {
+                        System.out.println("MADE it 1");
                         return true;
                 }
                 // perform checksum
@@ -187,12 +185,14 @@ public class Receiver {
                         digest.update(data);
                         byte[] to_compare = digest.digest();
                         if (checksum[0] == to_compare[0] && checksum[1] == to_compare[1]) {
+                                System.out.println("MADE it 2");
                                 return true;
                         } else return false;
                 } catch (Exception e) {
                         e.printStackTrace();
                         System.err.println("\nChecksum error encountered\n");
                 }
+                System.out.println("MADE it 3");
                 return false;
         }
 
@@ -230,7 +230,7 @@ public class Receiver {
                                 BufferedWriter log_writer) {
                 String entry = "Time(ms): " + System.currentTimeMillis() + " ";
                 entry += "Source: " + source_ip + ":" + source_port + " ";
-                entry += "Destination: " + dest_ip + ": " + dest_port + " ";
+                entry += "Destination: " + dest_ip + ":" + dest_port + " ";
                 entry += "Sequence #: " + seq_num + " ";
                 entry += "ACK #: " + ack_num + " ";
                 entry += "FIN: " + fin + "\n";
