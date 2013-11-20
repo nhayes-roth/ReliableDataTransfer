@@ -115,7 +115,6 @@ public class Receiver {
                 byte[] bytes_received = null;
                 DatagramSocket socket = new DatagramSocket(l_port);
                 int expected_seq_num = 0;
-                int response_seq_num = 0;
                 boolean fin_flag = false;
                 // loop until the fin_flag is received
                 while (!fin_flag) {
@@ -129,21 +128,13 @@ public class Receiver {
                         byte[] data = Arrays.copyOfRange(buffer, 20,
                                         buffer.length);
                         // extract the header fields
-                        int source_port = toInteger(Arrays.copyOfRange(buffer,
-                                        0, 2));
-                        int dest_port = toInteger(Arrays.copyOfRange(buffer, 2,
-                                        4));
-                        int seq_num = toInteger(Arrays
-                                        .copyOfRange(buffer, 4, 8));
-                        int ack_num = toInteger(Arrays.copyOfRange(buffer, 8,
-                                        12));
-                        int header_len = toInteger(Arrays.copyOfRange(buffer,
-                                        12, 13));
+                        int source_port = toInteger(Arrays.copyOfRange(buffer,0, 2));
+                        int dest_port = toInteger(Arrays.copyOfRange(buffer, 2, 4));
+                        int seq_num = toInteger(Arrays.copyOfRange(buffer, 4, 8));
+                        int ack_num = toInteger(Arrays.copyOfRange(buffer, 8, 12));
+                        int header_len = toInteger(Arrays.copyOfRange(buffer, 12, 13));
                         byte[] flags = Arrays.copyOfRange(buffer, 13, 14);
-                        fin_flag = (Boolean) (flags[0] == (byte) 1); // only
-                                                                     // flag we
-                                                                     // care
-                                                                     // about
+                        fin_flag = (Boolean) (flags[0] == (byte) 1); // only flag that matters
                         byte[] rec_window = Arrays.copyOfRange(buffer, 14, 16);
                         byte[] checksum = Arrays.copyOfRange(buffer, 16, 18);
                         byte[] urgent = Arrays.copyOfRange(buffer, 18, 20);
@@ -164,7 +155,7 @@ public class Receiver {
                                 expected_seq_num += data.length;
                                 byte[] ack = concat(intToTwo(dest_port),
                                              concat(intToTwo(source_port),
-                                             concat(intToFour(response_seq_num),
+                                             concat(intToFour(seq_num),
                                              concat(intToFour(expected_seq_num),
                                              concat(Arrays.copyOfRange(buffer, 12, 13),
                                              concat(flags,
@@ -176,9 +167,8 @@ public class Receiver {
                                 // write log entry
                                 log(InetAddress.getLocalHost().getHostAddress(), dest_port, 
                                     ip.getHostAddress(), source_port, 
-                                    response_seq_num, expected_seq_num, fin_flag, log_writer);
+                                    seq_num, expected_seq_num, fin_flag, log_writer);
                                 // ack is only a header, so increment the seq num
-                                response_seq_num++;
                         }
                 }
                 // all packets received
