@@ -1,5 +1,6 @@
 *.class
 *.pdf
+*.txt
 
 # Package Files #
 *.jar
