@@ -175,9 +175,8 @@ public class Receiver {
          */
         public static boolean validate(int actual, int expected, byte[] checksum, byte[] data) {
                 // compare actual and expected seq_num
-                if (actual == expected) {
-                        System.out.println("MADE it 1");
-                        return true;
+                if (actual != expected) {
+                        return false;
                 }
                 // perform checksum
                 try {
