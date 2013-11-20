@@ -148,10 +148,10 @@ public class Sender implements Runnable{
                 long RTT = -1;
                 if (times.containsKey(seq_num))
                         RTT = System.currentTimeMillis() - times.get(seq_num);                if (RTT >= 0){
-                        entry += "RTT(ms): " + RTT;
+                        entry += "RTT(ms): " + RTT + "\n";
                 } 
                 else {
-                        entry += "RTT(ms): NA";
+                        entry += "RTT(ms): NA" + "\n";
                 }
                 try {
                         log_writer.write(entry);
@@ -179,7 +179,7 @@ public class Sender implements Runnable{
                 entry += "Destination: " + remote_ip.getHostAddress() + ": " + dest_port + " ";
                 entry += "Sequence #: " + seq_num + " ";
                 entry += "ACK #: " + ack_num + " ";
-                entry += "FIN: " + fin_flag;
+                entry += "FIN: " + fin_flag + "\n";
                 try {
                         log_writer.write(entry);
                         log_writer.flush();

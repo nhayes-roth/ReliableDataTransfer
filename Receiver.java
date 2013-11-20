@@ -120,24 +120,22 @@ public class Receiver {
                 while (!fin_flag) {
                         // receive a packet of data up to size 256 Bytes
                         byte[] buffer = new byte[256];
-                        DatagramPacket packet = new DatagramPacket(buffer,
-                                        buffer.length);
+                        DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                         socket.receive(packet);
                         // separate header from data
                         byte[] Header = Arrays.copyOfRange(buffer, 0, 20);
-                        byte[] data = Arrays.copyOfRange(buffer, 20,
-                                        buffer.length);
+                        byte[] data = Arrays.copyOfRange(buffer, 20, buffer.length);
                         // extract the header fields
-                        int source_port = toInteger(Arrays.copyOfRange(buffer,0, 2));
-                        int dest_port = toInteger(Arrays.copyOfRange(buffer, 2, 4));
-                        int seq_num = toInteger(Arrays.copyOfRange(buffer, 4, 8));
-                        int ack_num = toInteger(Arrays.copyOfRange(buffer, 8, 12));
-                        int header_len = toInteger(Arrays.copyOfRange(buffer, 12, 13));
-                        byte[] flags = Arrays.copyOfRange(buffer, 13, 14);
+                        int source_port = toInteger(Arrays.copyOfRange(Header,0, 2));
+                        int dest_port = toInteger(Arrays.copyOfRange(Header, 2, 4));
+                        int seq_num = toInteger(Arrays.copyOfRange(Header, 4, 8));
+                        int ack_num = toInteger(Arrays.copyOfRange(Header, 8, 12));
+                        int header_len = toInteger(Arrays.copyOfRange(Header, 12, 13));
+                        byte[] flags = Arrays.copyOfRange(Header, 13, 14);
                         fin_flag = (Boolean) (flags[0] == (byte) 1); // only flag that matters
-                        byte[] rec_window = Arrays.copyOfRange(buffer, 14, 16);
-                        byte[] checksum = Arrays.copyOfRange(buffer, 16, 18);
-                        byte[] urgent = Arrays.copyOfRange(buffer, 18, 20);
+                        byte[] rec_window = Arrays.copyOfRange(Header, 14, 16);
+                        byte[] checksum = Arrays.copyOfRange(Header, 16, 18);
+                        byte[] urgent = Arrays.copyOfRange(Header, 18, 20);
                         // write log entry for received packet
                         log(remote_ip, source_port, 
                             InetAddress.getLocalHost().getHostAddress(), dest_port, 
@@ -235,7 +233,7 @@ public class Receiver {
                 entry += "Destination: " + dest_ip + ": " + dest_port + " ";
                 entry += "Sequence #: " + seq_num + " ";
                 entry += "ACK #: " + ack_num + " ";
-                entry += "FIN: " + fin + " ";
+                entry += "FIN: " + fin + "\n";
                 try {
                         log_writer.write(entry);
                         log_writer.flush();
