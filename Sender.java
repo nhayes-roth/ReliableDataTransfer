@@ -107,6 +107,8 @@ public class Sender implements Runnable{
                                 // log it
                                 System.out.print("RECEIVED ACK - "); //TODO: remove
                                 logAckPacket(ack_packet);
+                                // restart timer
+                                timer = System.currentTimeMillis();
 
                                 // shift window if seq_num matches
                                 int ack_seq_num = Receiver.toInteger(Arrays.copyOfRange(buffer, 4, 8));
@@ -195,12 +197,7 @@ public class Sender implements Runnable{
         public void run(){
                 try {
                         while (true) {
-                                if(timeout()){
-                                        // reset the timer, double timeout, and send packets again
-                                        timer = System.currentTimeMillis();
-                                        timeout = timeout*2;
-                                        sendAgain();
-                                } else if (canSendMore()) {
+                                if (canSendMore()) {
                                         // make a new packet, send it, start the RTT timer, add to queue, log it
                                         DatagramPacket packet = makePacket();
                                         System.out.print("SENT - "); //TODO: remove
@@ -209,6 +206,13 @@ public class Sender implements Runnable{
                                         packet_number++;
                                         awaiting_ack.add(packet);
                                         logSentPacket(packet);
+                                }
+                                else if(timeout()){
+                                        // reset the timer, double timeout, and send packets again
+                                        System.out.println("\t\t TIMEOUT at " + timeout);
+                                        timer = System.currentTimeMillis();
+                                        timeout = timeout*2;
+                                        sendAgain();
                                 }
                         }
                 } catch (Exception e) {
