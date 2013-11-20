@@ -6,7 +6,6 @@
 
 import java.io.*;
 import java.net.*;
-import java.nio.*;
 import java.util.*;
 import java.security.MessageDigest;
 
@@ -20,8 +19,9 @@ public class Sender implements Runnable{
         private static long timer = 0;                                                        // timeout timer (ms)
         private static long timeout = 500;                                                    // dynamically changing timeout time (ms)
         private static Hashtable<Integer, Long> times = new Hashtable<Integer, Long>();       // departure times for packets (ms)
-        private static int packet_number;
+        private static int packet_number = 0;                                                 // sequence number
         private static int packets_needed;
+        private static int next_ack = 0;
         // args[]
         private static String filename;
         private static InetAddress remote_ip;
@@ -95,7 +95,6 @@ public class Sender implements Runnable{
          */
         private static void send() {
                 try {
-                        long eRTT = 0;  // will change over time
                         // start a thread to send packets
                         new Thread(new Sender()).start();
                         // listen for acks
@@ -104,37 +103,19 @@ public class Sender implements Runnable{
                                 // receive ACK packet
                                 DatagramPacket ack_packet = new DatagramPacket(buffer, buffer.length);
                                 socket.receive(ack_packet);
-                                // separate header from data
-                                byte[] Header = Arrays.copyOfRange(buffer, 0, 20);
-                                byte[] data = Arrays.copyOfRange(buffer, 20, buffer.length);  // should be empty
-                                // extract the header fields
-                                int source_port = Receiver.toInteger(Arrays.copyOfRange(buffer, 0, 2));
-                                int dest_port = Receiver.toInteger(Arrays.copyOfRange(buffer, 2, 4));
-                                int seq_num = Receiver.toInteger(Arrays.copyOfRange(buffer, 4, 8));
-                                int ack_num = Receiver.toInteger(Arrays.copyOfRange(buffer, 8, 12));
-                                int header_len = Receiver.toInteger(Arrays.copyOfRange(buffer, 12, 13));
+                                // log it
+                                logAckPacket(ack_packet);
+
+                                // shift window if seq_num matches
+                                int ack_seq_num = Receiver.toInteger(Arrays.copyOfRange(buffer, 4, 8));
+                                if (ack_seq_num == next_ack)
+                                        awaiting_ack.poll();
+
+                                // if an ACK with fin_flag true is received, we're done     
                                 byte[] flags = Arrays.copyOfRange(buffer, 13, 14);
                                 boolean fin_flag = (Boolean) (flags[0] == (byte) 1); 
-                                byte[] rec_window = Arrays.copyOfRange(buffer, 14, 16);
-                                byte[] checksum = Arrays.copyOfRange(buffer, 16, 18);
-                                byte[] urgent = Arrays.copyOfRange(buffer, 18, 20);
-                                
-                                /* TODO: verify that it the correct ACK
-                                 *    - check the seq_num compare it to the first awaiting_ack packet
-                                 *    - if it's right, remove that packet/shift the window
-                                 */
-                                
-                                
-                                // calculate RTT and log ACK
-                                long RTT = System.currentTimeMillis() - times.get(seq_num);
-                                eRTT = RTT/(long)8 + eRTT * (long)7/(long)8;
-                                log(remote_ip, source_port, InetAddress.getLocalHost(), dest_port, seq_num, ack_num, fin_flag, RTT);
-
-                                // if an ACK with fin_flag true is received, we're done
                                 if (fin_flag) {
-                                        System.out.println("+----------------------------------<");
-                                        System.out.println("|Delivery completed!");
-                                        System.out.println("+----------------------------------<");
+                                        System.out.println("\nDelivery completed successfully.\n");
                                         log_writer.close();
                                         System.exit(1);
                                 }
@@ -146,9 +127,45 @@ public class Sender implements Runnable{
         }
 
         /*
+         * Write a log entry to the previously determined logfile, adding RTT estimate.
+         */
+        private static void logAckPacket(DatagramPacket ack_packet) throws UnknownHostException {
+                byte[] buffer = ack_packet.getData();
+                // extract the header fields
+                int source_port = Receiver.toInteger(Arrays.copyOfRange(buffer, 0, 2));
+                int dest_port = Receiver.toInteger(Arrays.copyOfRange(buffer, 2, 4));
+                int seq_num = Receiver.toInteger(Arrays.copyOfRange(buffer, 4, 8));
+                int ack_num = Receiver.toInteger(Arrays.copyOfRange(buffer, 8, 12));        
+                byte[] flags = Arrays.copyOfRange(buffer, 13, 14);
+                boolean fin_flag = (Boolean) (flags[0] == (byte) 1); 
+                String entry = "Time(ms): " + System.currentTimeMillis() + " ";
+                entry += "Source: " + remote_ip.getHostAddress() + ":" + source_port + " ";
+                entry += "Destination: " + InetAddress.getLocalHost().getHostAddress() + ": " + dest_port + " ";
+                entry += "Sequence #: " + seq_num + " ";
+                entry += "ACK #: " + ack_num + " ";
+                entry += "FIN: " + fin_flag + " ";
+                // RTT
+                long RTT = -1;
+                if (times.containsKey(seq_num))
+                        RTT = System.currentTimeMillis() - times.get(seq_num);                if (RTT >= 0){
+                        entry += "RTT(ms): " + RTT;
+                } 
+                else {
+                        entry += "RTT(ms): NA";
+                }
+                try {
+                        log_writer.write(entry);
+                        log_writer.flush();
+                } catch (Exception e) {
+                        e.printStackTrace();
+                        System.err.println("\nError encountered writing to logfile.\n");
+                }
+        }
+
+        /*
          * Write a log entry to the previously determined logfile, just the packet.
          */
-        private static void log(DatagramPacket packet) throws UnknownHostException{
+        private static void logSentPacket(DatagramPacket packet) throws UnknownHostException{
                 byte[] buffer = packet.getData();
                 // extract the header fields
                 int source_port = Receiver.toInteger(Arrays.copyOfRange(buffer, 0, 2));
@@ -173,33 +190,9 @@ public class Sender implements Runnable{
         }
         
         /*
-         * Write a log entry to the previously determined logfile, with explicit arguments.
-         */
-        private static void log(InetAddress remote_ip, int source_port,
-                        InetAddress localHost, int dest_port, int seq_num,
-                        int ack_num, boolean fin_flag, long RTT) {
-                String entry = "Time(ms): " + System.currentTimeMillis() + " ";
-                entry += "Source: " + remote_ip.getHostAddress() + ":" + source_port + " ";
-                entry += "Destination: " + localHost.getHostAddress() + ": " + dest_port + " ";
-                entry += "Sequence #: " + seq_num + " ";
-                entry += "ACK #: " + ack_num + " ";
-                entry += "FIN: " + fin_flag + " ";
-                entry += "RTT(ms): " + RTT;
-                try {
-                        log_writer.write(entry);
-                        log_writer.flush();
-                } catch (Exception e) {
-                        e.printStackTrace();
-                        System.err.println("\nError encountered writing to logfile.\n");
-                }
-                
-        }
-        
-        /*
          * Independent thread to handle sending of data packets.
          */
         public void run(){
-                long calculated_timeout = 1;
                 try {
                         while (true) {
                                 if(timeout()){
@@ -208,14 +201,67 @@ public class Sender implements Runnable{
                                         timeout = timeout*2;
                                         sendAgain();
                                 } else if (canSendMore()) {
-                                        // make a new packet, send it, log it
-                                        DatagramPacket packet = makePacket(); // TODO: this part, then fix the ack accepter in send()
+                                        // make a new packet, send it, start the RTT timer, add to queue, log it
+                                        DatagramPacket packet = makePacket();
+                                        socket.send(packet);
+                                        times.put(packet_number, System.currentTimeMillis());
+                                        packet_number++;
+                                        awaiting_ack.add(packet);
+                                        logSentPacket(packet);
                                 }
                         }
                 } catch (Exception e) {
                         e.printStackTrace();
                         // print error
                 }
+        }
+
+        /* 
+         * Constructs the next appropriate data packet for delivery.
+         */
+        private static DatagramPacket makePacket() {
+                DatagramPacket packet = null;
+                // grab relevant file_bytes
+                int start_index = packet_number*236;
+                int end_index = Math.min((packet_number+1)*236, file_bytes.length);
+                byte [] data = Arrays.copyOfRange(file_bytes, start_index, end_index);
+                byte [] all;
+                try {
+                        // calculate checksum
+                        MessageDigest digest = MessageDigest.getInstance("MD5");
+                        digest.update(data);
+                        byte[] digest_bytes = digest.digest();
+                        byte[] checksum = Arrays.copyOfRange(digest_bytes, 0, 2);
+                        
+                        // check if this is the last byte, set the flag
+                        int fin_flag = 0;
+                        if (packet_number == packets_needed - 1)
+                                fin_flag = 1;
+
+                        // append the header to the data
+                        all = concat(Receiver.intToTwo(remote_port),
+                                        concat(Receiver.intToTwo(ack_port),
+                                        concat(Receiver.intToFour(packet_number),
+                                        concat(Receiver.intToFour(next_ack),
+                                        concat(Receiver.intToTwo(fin_flag),
+                                        concat(Receiver.intToTwo(1),
+                                        concat(checksum,
+                                        concat(Receiver.intToTwo(0), data))))))));
+                        
+                        // construct packet
+                        packet = new DatagramPacket(all, all.length, remote_ip, remote_port);
+                } catch (Exception e){
+                        e.printStackTrace();
+                        System.err.println("\nError constructing packet.\n");
+                }
+                return packet;
+        }
+        
+        /*
+         * Concatenate two byte[] together.
+         */
+        private static byte[] concat(byte[] a, byte[] b){
+                return Receiver.concat(a, b);
         }
 
         /*
@@ -233,7 +279,7 @@ public class Sender implements Runnable{
         private void sendAgain() {
                 for (DatagramPacket packet : awaiting_ack){
                         try {
-                                log(packet);
+                                logSentPacket(packet);
                                 socket.send(packet);
                         } catch (Exception e) {
                                 e.printStackTrace();
