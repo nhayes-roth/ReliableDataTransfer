@@ -184,14 +184,12 @@ public class Receiver {
                         digest.update(data);
                         byte[] to_compare = digest.digest();
                         if (checksum[0] == to_compare[0] && checksum[1] == to_compare[1]) {
-                                System.out.println("MADE it 2");
                                 return true;
                         } else return false;
                 } catch (Exception e) {
                         e.printStackTrace();
                         System.err.println("\nChecksum error encountered\n");
                 }
-                System.out.println("MADE it 3");
                 return false;
         }
 
