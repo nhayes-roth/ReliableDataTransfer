@@ -190,8 +190,8 @@ public class Receiver {
                         MessageDigest digest = MessageDigest.getInstance("MD5");
                         digest.update(data);
                         byte[] to_compare = Arrays.copyOfRange(digest.digest(), 0, 2);
-                        System.out.println("\t\t\t\t   checksum:" + checksum);
-                        System.out.println("\t\t\t\t to_compare:" + to_compare);
+                        System.out.println("\t\t\t\t   checksum: \t" + checksum[0] + "\t" + checksum[1]);
+                        System.out.println("\t\t\t\t to_compare: \t" + to_compare[0] + "\t" + to_compare[1]);
                         if (checksum[0] == to_compare[0] && checksum[1] == to_compare[1]) {
                                 return true;
                         } else {

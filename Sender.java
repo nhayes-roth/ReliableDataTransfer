@@ -246,7 +246,7 @@ public class Sender implements Runnable{
                 DatagramPacket packet = null;
                 // grab relevant file_bytes
                 int start_index = packet_number*236;
-                int end_index = Math.min((packet_number+1)*236, file_bytes.length);
+                int end_index = (packet_number+1)*236;
                 byte [] data = Arrays.copyOfRange(file_bytes, start_index, end_index);
                 byte [] all;
                 try {
