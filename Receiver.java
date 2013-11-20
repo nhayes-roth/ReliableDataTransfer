@@ -114,10 +114,8 @@ public class Receiver {
                 }
                 byte[] bytes_received = null;
                 DatagramSocket socket = new DatagramSocket(l_port);
-                int expected_seq_num = -1; // accept the first packet no matter
-                                           // what; then change
-                int response_seq_num = new Random(System.currentTimeMillis())
-                                .nextInt(); // random start
+                int expected_seq_num = 0;
+                int response_seq_num = 0;
                 boolean fin_flag = false;
                 // loop until the fin_flag is received
                 while (!fin_flag) {
@@ -192,7 +190,7 @@ public class Receiver {
          */
         public static boolean validate(int actual, int expected, byte[] checksum, byte[] data) {
                 // compare actual and expected seq_num
-                if ((expected >= 0) && (actual == expected)) {
+                if (actual == expected) {
                         return false;
                 }
                 // perform checksum
