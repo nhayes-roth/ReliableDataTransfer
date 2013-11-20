@@ -1,8 +1,26 @@
-// THIS ISN"T THE REAL ONE// THIS ISN"T THE REAL ONE// THIS ISN"T THE REAL ONE
-// THIS ISN"T THE REAL ONE// THIS ISN"T THE REAL ONE// THIS ISN"T THE REAL ONE
-// THIS ISN"T THE REAL ONE// THIS ISN"T THE REAL ONE// THIS ISN"T THE REAL ONE
-// THIS ISN"T THE REAL ONE// THIS ISN"T THE REAL ONE// THIS ISN"T THE REAL ONE
-// THIS ISN"T THE REAL ONE// THIS ISN"T THE REAL ONE// THIS ISN"T THE REAL ONE
+/*
+ * File: Sender.java
+ * ------------
+ * Name:       Nathan Hayes-Roth
+ * UNI:        nbh2113
+ * Class:      Computer Networks
+ * Assignment: Programming Assignment #2
+ * ------------
+ * The sender sends the data in the specified file (filename) to the remote host at the
+ * specified IP address (remote_IP) and port number (remote_port). The sender is invoked as follows:
+ *      $ java Sender file.txt 128.59.15.38 20000 20001 1152 logfile.txt
+ *                    filename, remote_IP, remote_port, ack_port_number, window_size, log_filename
+ * In the above example the remote host (which can be either the receiver or the link emulator proxy) 
+ * is located at 128.59.15.38 and port 20000. The command-line parameter ack_port_number
+ * specifies the local port for the received acknowledgements. The window_size is
+ * measured in terms of the number of packets and your sender should support values
+ * from 1-65535. As before a log filename is specified. The log entry output format should
+ * be similar to the one used by the receiver, however, it should have one additional output
+ * field (append at the end), which is the estimated RTT. At the end of the delivery the
+ * sender should indicate whether the transmission was successful, and print the number
+ * of sent and retransmitted segments. The sender should report file I/O errors (e.g., ‘file
+ * not found’).
+ */
 
 import java.io.*;
 import java.net.*;
