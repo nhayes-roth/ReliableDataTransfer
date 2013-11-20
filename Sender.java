@@ -105,12 +105,15 @@ public class Sender implements Runnable{
                                 DatagramPacket ack_packet = new DatagramPacket(buffer, buffer.length);
                                 socket.receive(ack_packet);
                                 // log it
+                                System.out.print("RECEIVED ACK - "); //TODO: remove
                                 logAckPacket(ack_packet);
 
                                 // shift window if seq_num matches
                                 int ack_seq_num = Receiver.toInteger(Arrays.copyOfRange(buffer, 4, 8));
-                                if (ack_seq_num == next_ack)
+                                if (ack_seq_num == next_ack){
                                         awaiting_ack.poll();
+                                        next_ack ++;
+                                }
 
                                 // if an ACK with fin_flag true is received, we're done     
                                 byte[] flags = Arrays.copyOfRange(buffer, 13, 14);
@@ -200,6 +203,7 @@ public class Sender implements Runnable{
                                 } else if (canSendMore()) {
                                         // make a new packet, send it, start the RTT timer, add to queue, log it
                                         DatagramPacket packet = makePacket();
+                                        System.out.print("SENT - "); //TODO: remove
                                         socket.send(packet);
                                         times.put(packet_number, System.currentTimeMillis());
                                         packet_number++;
@@ -236,8 +240,8 @@ public class Sender implements Runnable{
                                 fin_flag = 1;
 
                         // append the header to the data
-                        all = concat(Receiver.intToTwo(remote_port),
-                                        concat(Receiver.intToTwo(ack_port),
+                        all = concat(Receiver.intToTwo(ack_port),
+                                        concat(Receiver.intToTwo(remote_port),
                                         concat(Receiver.intToFour(packet_number),
                                         concat(Receiver.intToFour(next_ack),
                                         concat(Receiver.intToTwo(fin_flag),
@@ -276,6 +280,7 @@ public class Sender implements Runnable{
         private void sendAgain() {
                 for (DatagramPacket packet : awaiting_ack){
                         try {
+                                System.out.print("SENT AGAIN - "); //TODO: remove
                                 logSentPacket(packet);
                                 socket.send(packet);
                         } catch (Exception e) {
