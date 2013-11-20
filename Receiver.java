@@ -32,6 +32,7 @@ public class Receiver {
                 BufferedWriter log_writer = startLog(args[4]);
                 byte[] bytes_received = receive(args[1], args[2], args[3],
                                 log_writer);
+
                 writeToFile(bytes_received, args[0]);
         }
 
@@ -130,7 +131,6 @@ public class Receiver {
                         int dest_port = toInteger(Arrays.copyOfRange(Header, 2, 4));
                         int seq_num = toInteger(Arrays.copyOfRange(Header, 4, 8));
                         int ack_num = toInteger(Arrays.copyOfRange(Header, 8, 12));
-                        int header_len = toInteger(Arrays.copyOfRange(Header, 12, 13));
                         byte[] flags = Arrays.copyOfRange(Header, 13, 14);
                         fin_flag = (Boolean) (flags[0] == (byte) 1); // only flag that matters
                         byte[] rec_window = Arrays.copyOfRange(Header, 14, 16);
@@ -179,7 +179,7 @@ public class Receiver {
         public static boolean validate(int actual, int expected, byte[] checksum, byte[] data) {
                 // compare actual and expected seq_num
                 if (actual == expected) {
-                        return false;
+                        return true;
                 }
                 // perform checksum
                 try {
