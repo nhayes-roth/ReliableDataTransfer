@@ -303,9 +303,10 @@ public class Sender implements Runnable{
          * Sends all the packets in the queue again.
          */
         private void sendAgain() {
-                DatagramPacket[] packets = (DatagramPacket[]) awaiting_ack.toArray();
-                for (DatagramPacket packet : packets){
+                Object[] packets = awaiting_ack.toArray();
+                for (Object object : packets){
                         try {
+                                DatagramPacket packet = (DatagramPacket) object;
                                 logSentPacket(packet);
                                 socket.send(packet);
                         } catch (Exception e) {
