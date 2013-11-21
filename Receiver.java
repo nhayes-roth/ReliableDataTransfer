@@ -256,6 +256,7 @@ public class Receiver {
          * Reconstruct the original file and save it to the provided filename.
          */
         private static void writeToFile(byte[] bytes_received, String filename) {
+                bytes_received = cleanBytes(bytes_received);
                 try{
                         FileOutputStream stream = new FileOutputStream(filename);
                         stream.write(bytes_received);
@@ -266,6 +267,22 @@ public class Receiver {
                         System.err.println("\nError encountered creating output file.\n");
                 }
                        return;
+        }
+
+        /*
+         * Remove the useless (byte)0's from the end of the bytes_received array.
+         */
+        private static byte[] cleanBytes(byte[] bytes_received) {
+                int end_index = -1;
+                for (int i = bytes_received.length - 1; i >=0; i--){
+                        if (bytes_received[i] == (byte)0){
+                                end_index = i;
+                        }
+                        else break;
+                }
+                if (end_index > 0)
+                        return Arrays.copyOfRange(bytes_received, 0, end_index);
+                else return bytes_received;
         }
 
         /*
