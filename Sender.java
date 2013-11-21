@@ -73,7 +73,7 @@ public class Sender implements Runnable{
                         System.exit(1);
                 }
                 // window size
-                else if (Integer.parseInt(args[4])<=0){
+                else if (Integer.parseInt(args[4])<=0 || Integer.parseInt(args[4]) >= 65535){
                         System.err.println("\nImproper window size. Please choose an integer value greater than 0.");
                         System.exit(1);
                 }
