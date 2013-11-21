@@ -38,8 +38,6 @@ public class Receiver {
                 check(args);
                 BufferedWriter log_writer = startLog(log_filename);
                 byte[] bytes_received = receive(log_writer);
-
-                System.out.println("####### Writing -- " + bytes_received.length + "bytes to file... #######");
                 writeToFile(bytes_received, filename);
         }
 
@@ -135,13 +133,11 @@ public class Receiver {
                         byte[] checksum = Arrays.copyOfRange(Header, 16, 18);
                         byte[] urgent = Arrays.copyOfRange(Header, 18, 20);
                         // write log entry for received packet
-                        System.out.print("RECEIVED - "); //TODO: remove
                         log(remote_ip.getHostAddress(), remote_port, 
                             InetAddress.getLocalHost().getHostAddress(), listening_port, 
                             seq_num, ack_num, fin_flag, log_writer);
                         // validate the correctness of the received packet
                         if (validate(seq_num, expected_seq_num, checksum, data)) {
-                                System.out.println("\t\t YOU PASSED!!!");
                                 // add data to received
                                 if (bytes_received == null) {
                                         bytes_received = data;
@@ -163,7 +159,6 @@ public class Receiver {
                                 DatagramPacket ackPacket = new DatagramPacket(ack, ack.length, remote_ip, remote_port);
                                 socket.send(ackPacket);
                                 // write log entry
-                                System.out.print("SENT ACK - "); //TODO: remove
                                 log(InetAddress.getLocalHost().getHostAddress(), listening_port, 
                                     remote_ip.getHostAddress(), remote_port, 
                                     seq_num, expected_seq_num, fin_flag, log_writer);
@@ -178,9 +173,6 @@ public class Receiver {
          * Validates that the received packet is the expected one.
          */
         public static boolean validate(int actual, int expected, byte[] checksum, byte[] data) {
-                System.out.println("\t\t validate(): "
-                                + "\t\t actual: " + actual
-                                + "\t\t expected: " + expected);
                 // compare actual and expected seq_num
                 if (actual != expected) {
                         return false;
@@ -190,12 +182,9 @@ public class Receiver {
                         MessageDigest digest = MessageDigest.getInstance("MD5");
                         digest.update(data);
                         byte[] to_compare = Arrays.copyOfRange(digest.digest(), 0, 2);
-                        System.out.println("\t\t\t\t   checksum: \t" + checksum[0] + "\t" + checksum[1]);
-                        System.out.println("\t\t\t\t to_compare: \t" + to_compare[0] + "\t" + to_compare[1]);
                         if (checksum[0] == to_compare[0] && checksum[1] == to_compare[1]) {
                                 return true;
                         } else {
-                                System.out.println("\t\tFAILURE!!!!!!!");
                                 return false;
                         }
                 } catch (Exception e) {

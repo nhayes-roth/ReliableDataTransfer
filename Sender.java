@@ -33,9 +33,11 @@ public class Sender implements Runnable{
         private static byte[] file_bytes;                                              // file of interest converted to bytes
         private static DatagramSocket socket;                                            // socket for sending and receiving data
         private static BufferedWriter log_writer;                                             // handles writing to log
-        private static Queue<DatagramPacket> awaiting_ack = new LinkedList<DatagramPacket>(); // hold packets for potential re-send
+        private static  Queue<DatagramPacket> awaiting_ack = new LinkedList<DatagramPacket>(); // hold packets for potential re-send
         private static long timer = 0;                                                        // timeout timer (ms)
         private static long timeout = 500;                                                    // dynamically changing timeout time (ms)
+        private static long estimated_RTT = 0;
+        private static long dev_RTT = 0;
         private static Hashtable<Integer, Long> times = new Hashtable<Integer, Long>();       // departure times for packets (ms)
         private static int packet_number = 0;                                                 // sequence number
         private static int packets_needed;
@@ -53,7 +55,6 @@ public class Sender implements Runnable{
         public static void main(String[] args) throws Exception {
                 check(args);
                 loadFile(filename);
-                System.out.println("####### Bytes read in -- " + file_bytes.length);
                 packets_needed = file_bytes.length/(256 - 20) + 1;
                 socket = new DatagramSocket(ack_port);
                 log_writer = Receiver.startLog(log_filename);
@@ -123,7 +124,6 @@ public class Sender implements Runnable{
                                 DatagramPacket ack_packet = new DatagramPacket(buffer, buffer.length);
                                 socket.receive(ack_packet);
                                 // log it
-                                System.out.print("RECEIVED ACK - "); //TODO: remove
                                 logAckPacket(ack_packet);
                                 // restart timer
                                 timer = System.currentTimeMillis();
@@ -169,7 +169,11 @@ public class Sender implements Runnable{
                 // RTT
                 long RTT = -1;
                 if (times.containsKey(seq_num))
-                        RTT = System.currentTimeMillis() - times.get(seq_num);                if (RTT >= 0){
+                        RTT = System.currentTimeMillis() - times.get(seq_num);
+                        estimated_RTT = (long) (0.875*estimated_RTT + 0.125*estimated_RTT);
+                        dev_RTT = (long)(0.75*dev_RTT + 0.25*Math.abs(RTT-estimated_RTT));
+                        timeout = estimated_RTT+4*dev_RTT;
+                if (RTT >= 0){
                         entry += "RTT(ms): " + RTT + "\n";
                 } 
                 else {
@@ -218,7 +222,6 @@ public class Sender implements Runnable{
                                 if (canSendMore()) {
                                         // make a new packet, send it, start the RTT timer, add to queue, log it
                                         DatagramPacket packet = makePacket();
-                                        System.out.print("SENT - "); //TODO: remove
                                         socket.send(packet);
                                         times.put(packet_number, System.currentTimeMillis());
                                         packet_number++;
@@ -300,9 +303,9 @@ public class Sender implements Runnable{
          * Sends all the packets in the queue again.
          */
         private void sendAgain() {
-                for (DatagramPacket packet : awaiting_ack){
+                DatagramPacket[] packets = (DatagramPacket[]) awaiting_ack.toArray();
+                for (DatagramPacket packet : packets){
                         try {
-                                System.out.print("SENT AGAIN - "); //TODO: remove
                                 logSentPacket(packet);
                                 socket.send(packet);
                         } catch (Exception e) {
