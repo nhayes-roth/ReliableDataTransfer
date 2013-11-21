@@ -11,13 +11,18 @@ This package implements a one-way version of a reliable data transfer protocol, 
 The programs guarantee reliable, in-order delivery of a stream of bytes, recovering from dynamic network
 problems and problems such as packet loss, packet corruption, packet duplication, and packet reordering.
 
-The package implements a version of Go-Back-N protocol, with dynamically changing timeout timers. In order
-to use the package, the source code for the Sender and Receiver should be compiled and run on separate
-machines (or terminals). Once compiled, the programs can be executed in the following manners:
+The package implements a version of Go-Back-N protocol, with dynamically changing timeout timers. 
+Data is exchanged via UDP: 256 byte packets are constructed from the standard 20 byte TCP header and
+236 bytes of data.
+
+In order to use the package, the source code for the Sender and Receiver should be compiled and run on 
+separate machines (or terminals). Once compiled, the programs can be executed in the following manners:
 
 ##### Receiver
-`~/.../nbh2113$ java Receiver result.txt 20000 localhost 20001 stdout
-//command line exec with filename, listening_port remote_IP, remote_port, log_filename`
+```
+~/.../nbh2113$ java Receiver result.txt 20000 localhost 20001 stdout
+//command line exec with filename, listening_port remote_IP, remote_port, log_filename
+```
 
 The receiver receives data on the listening_port, writes it to the specified file (filename) and sends ACKS 
 to the remote host at the remote_ip and remote_port. The receiver logs the headers of all received and sent 
@@ -25,8 +30,10 @@ packets to log_filename and orders them by timestamp. Specifying log_filename as
 to display on standard output. The log format is as follows
 
 ##### Sender
-`~/.../nbh2113$ java Sender test.txt localhost 20000 20001 5 stdout
-\\command line exec with filename, remote_IP, remote_port, ack_port_number, window_size, log_filename`
+```
+~/.../nbh2113$ java Sender test.txt localhost 20000 20001 5 stdout
+\\command line exec with filename, remote_IP, remote_port, ack_port_number, window_size, log_filename
+```
 
 In the above example the remote host is located at 128.59.15.38 and port 20000. The command-line parameter 
 ack_port_number specifies the local port for the received acknowledgements. The window_size is measured in 
@@ -49,15 +56,15 @@ is specified.
 
 2. Run Make to compile all the source code.
 
-    `~/.../nbh2113$ make`
+        `~/.../nbh2113$ make`
 
 3. In one terminal, start the receiver.
 
-    `~/.../nbh2113$ java Receiver result.txt 20000 localhost 20001 stdout`
+        `~/.../nbh2113$ java Receiver result.txt 20000 localhost 20001 stdout`
 
 4. In another terminal, start the sender.
 
-    `~/.../nbh2113$ java Sender test.txt localhost 20000 20001 5 stdout`
+        `~/.../nbh2113$ java Sender test.txt localhost 20000 20001 5 stdout`
 
 
 ### Files
